@@ -1,0 +1,76 @@
+---
+# apply_configs_cvp.yml
+
+- name: Apply Configs to CVP
+  hosts: cvp
+  gather_facts: false
+  vars:
+    output_dir: "output"
+    configlet_prefix: "TEST"
+    execute_tasks: True
+
+  tasks:
+    - name: "Read Device Data from CSV"
+      community.general.read_csv:
+        path: devices.csv
+      register: devices
+
+    - name: "Template Out Container and Configlet assignment"
+      ansible.builtin.template:
+        src: templates/container_configlet_template.j2
+        dest: "{{ output_dir }}/containers.yml"
+        mode: "0644"
+
+    - name: "Load CVP device information"
+      ansible.builtin.include_vars: "{{ output_dir }}/containers.yml"
+
+    - name: "Build Container topology"
+      arista.cvp.cv_container_v3:
+        topology: "{{ cvp_containers }}"
+        state: present
+      register: cvp_container_results
+
+    - name: "Execute pending tasks"
+      arista.cvp.cv_task_v3:
+        tasks: "{{ cvp_container_results.taskIds }}"
+      when:
+        - cvp_container_results.taskIds is arista.avd.defined
+        - cvp_container_results.taskIds | length > 0
+        - execute_tasks | bool
+
+    - name: "Generate intended variables"
+      arista.avd.configlet_build_config:
+        configlet_dir: "{{ output_dir }}"
+        configlet_prefix: "{{ configlet_prefix }}"
+        configlet_extension: "txt"
+      register: cvp_vars
+
+    - name: "Create configlets on CVP"
+      arista.cvp.cv_configlet_v3:
+        configlets: "{{ cvp_vars.cvp_configlets }}"
+      register: cvp_configlets_status
+
+    - name: "Execute pending tasks"
+      arista.cvp.cv_task_v3:
+        tasks: "{{ cvp_configlets_status.taskIds }}"
+      when:
+        - cvp_configlets_status.taskIds is arista.avd.defined
+        - cvp_configlets_status.taskIds | length > 0
+        - execute_tasks | bool
+
+    - name: "Configure devices on CVP"
+      arista.cvp.cv_device_v3:
+        devices: "{{ cvp_devices }}"  # noqa: args[module]
+        state: present
+        apply_mode: "strict"
+        inventory_mode: "loose"
+        search_key: "serialNumber"
+      register: cvp_devices_results
+
+    - name: "Execute pending tasks"
+      arista.cvp.cv_task_v3:
+        tasks: "{{ cvp_devices_results.taskIds }}"
+      when:
+        - cvp_devices_results.taskIds is arista.avd.defined
+        - cvp_devices_results.taskIds | length > 0
+        - execute_tasks | bool

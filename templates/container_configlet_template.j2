@@ -1,0 +1,16 @@
+{% set local_var = namespace() %}
+{% set local_var.sites = [] %}
+cvp_devices:
+{% for device in devices.list %}
+{%     do local_var.sites.append(device.site) %}
+  - fqdn: {{ device.hostname }}
+    serialNumber: {{ device.serial }}
+    parentContainerName: {{ device.site }}
+    configlets:
+      - {{ configlet_prefix }}_{{ device.hostname }}
+{% endfor %}
+cvp_containers:
+{% for container in local_var.sites | unique %}
+  {{ container }}:
+    parentContainerName: Tenant
+{% endfor %}

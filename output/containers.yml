@@ -1,0 +1,9 @@
+cvp_devices:
+  - fqdn: TestDevice
+    serialNumber: D90CF8CC44A8FBA9321E46617A57AF2E
+    parentContainerName: SiteC
+    configlets:
+      - TEST_TestDevice
+cvp_containers:
+  SiteC:
+    parentContainerName: Tenant

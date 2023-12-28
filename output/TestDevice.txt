@@ -1,0 +1,40 @@
+hostname TestDevice
+!
+username admin privilege 15 role network-admin secret arista123
+!
+daemon TerminAttr
+   exec /usr/bin/TerminAttr -cvaddr=10.100.163.104:9910 -taillogs -cvauth=token,/tmp/token -cvproxy= -smashexcludes=ale,flexCounter,hardware,kni,pulse,strata
+   no shutdown
+!
+interface Loopback0
+   description BGP RID
+   ip address 172.16.1.4/32
+!
+vlan 200
+   name DATA
+!
+vlan 201
+   name PHONE
+!
+interface Vlan200
+   description DATA vlan SVI
+   ip address 192.168.200.3/24
+   ip virtual-router address 192.168.200.1
+!
+interface Vlan201
+   description PHONE vlan SVI
+   ip address 192.168.201.3/24
+   ip virtual-router address 192.168.201.1
+!
+ip routing
+!
+interface Management1
+   description Mgmt Interface
+   ip address 192.168.0.11/24
+!
+ip route 0.0.0.0/0 192.168.0.1
+!
+router bgp 64513
+   router-id 172.16.1.4
+!
+end

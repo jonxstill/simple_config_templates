@@ -1,0 +1,40 @@
+hostname {{ item.hostname }}
+!
+username admin privilege 15 role network-admin secret arista123
+!
+daemon TerminAttr
+   exec /usr/bin/TerminAttr -cvaddr=10.100.163.104:9910 -taillogs -cvauth=token,/tmp/token -cvproxy= -smashexcludes=ale,flexCounter,hardware,kni,pulse,strata
+   no shutdown
+!
+interface Loopback0
+   description BGP RID
+   ip address {{ item.bgp_rid }}/32
+!
+vlan {{ item.data_vlan }}
+   name DATA
+!
+vlan {{ item.phone_vlan }}
+   name PHONE
+!
+interface Vlan{{ item.data_vlan }}
+   description DATA vlan SVI
+   ip address {{ item.data_ip }}
+   ip virtual-router address {{ item.data_virtual_ip }}
+!
+interface Vlan{{ item.phone_vlan }}
+   description PHONE vlan SVI
+   ip address {{ item.phone_ip }}
+   ip virtual-router address {{ item.phone_virtual_ip }}
+!
+ip routing
+!
+interface Management1
+   description Mgmt Interface
+   ip address 192.168.0.11/24
+!
+ip route 0.0.0.0/0 192.168.0.1
+!
+router bgp {{ item.bgp_asn }}
+   router-id {{ item.bgp_rid }}
+!
+end

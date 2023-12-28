@@ -1,0 +1,29 @@
+---
+# generate_configs.yml
+
+- name: Generate Configs based on CSV and Template
+  hosts: localhost
+  gather_facts: false
+  vars:
+    output_dir: "output"
+  tasks:
+
+    - name: "Read Device Data from CSV"
+      community.general.read_csv:
+        path: devices.csv
+      register: devices
+
+    - name: "Create output directory"
+      ansible.builtin.file:
+        path: "{{ output_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: "Template Out Configurations"
+      ansible.builtin.template:
+        src: templates/device_template.j2
+        dest: "{{ output_dir }}/{{ item.hostname }}.txt"
+        mode: "0644"
+      loop: "{{ devices.list }}"
+      loop_control:
+        label: "{{ item.hostname }}"
